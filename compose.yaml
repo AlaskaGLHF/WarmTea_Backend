@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16.0
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: yNx-tKr-zA9-kEZ
+      POSTGRES_DB: WarmTea
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
