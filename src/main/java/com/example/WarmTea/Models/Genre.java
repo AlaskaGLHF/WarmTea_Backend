@@ -2,12 +2,11 @@ package com.example.WarmTea.Models;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "genre")
+@Table(name = "genres")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,12 +15,11 @@ public class Genre {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id = 0L;
+    private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String name;
+    private String name; // Action, Comedy, Drama и т.д.
 
-    // Обратная связь с MovieGenre
+    // Связь с фильмами через MovieGenre (M:N)
     @OneToMany(mappedBy = "genre", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<MovieGenre> movieGenres = new ArrayList<>();

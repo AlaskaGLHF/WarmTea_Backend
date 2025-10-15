@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 // ===== MovieGenre =====
 @Entity
-@Table(name = "movie_genre")
+@Table(name = "movie_genres")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

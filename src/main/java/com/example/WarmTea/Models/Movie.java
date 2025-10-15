@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "movie")
-@Data // ✅ Lombok: геттеры, сеттеры, toString, equals, hashCode
+@Table(name = "movies") // соответствует таблице movies в БД
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -19,19 +19,47 @@ public class Movie {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String title;
+    private String kpId;          // ID на Кинопоиске (может быть null)
+    private String title;         // Название фильма
+    private String description;   // Полное описание
+    private String shortDescription; // Короткое описание для карточек
+    private String slogan;        // Слоган фильма
+    private int releaseYear;      // Год выпуска
+    private int duration;         // Длительность в минутах
+    private double rating;        // Средний рейтинг на сайте
+    private String ratingMpaa;    // PG-13, R и т.д.
+    private int ageRating;        // Ограничение по возрасту
+    private String status;        // completed / ongoing / announced
+    private String logoUrl;       // Ссылка на постер
+    private String videoUrl;      // Ссылка на видео в облаке
+    private String country;       // Страна производства
 
-    private String description;
+    @ManyToOne
+    @JoinColumn(name = "type_id")
+    private MovieType type;       // Связь с таблицей movie_types
 
-    private int release_year;
+    private int typeNumber;       // Номер сезона/часть
 
-    private int duration;
+    private OffsetDateTime createdAt = OffsetDateTime.now();
+    private OffsetDateTime updatedAt = OffsetDateTime.now();
 
-    private double rating;
-
-    private OffsetDateTime created_at = OffsetDateTime.now();
-
-    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = false)
+    // ---------- Связь с жанрами (M:N через промежуточную сущность MovieGenre) ----------
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<MovieGenre> movieGenres = new ArrayList<>();
+
+    // ---------- Связь с избранным (M:N через Favorite) ----------
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Favorite> favorites = new ArrayList<>();
+
+    // ---------- Связь с историей просмотров ----------
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<WatchHistory> watchHistories = new ArrayList<>();
+
+    // ---------- Связь с рейтингами ----------
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Rating> ratings = new ArrayList<>();
 }
