@@ -1,17 +1,20 @@
 package com.example.WarmTea.Controller;
 
-import com.example.WarmTea.Dtos.UsersDto.LoginRequestDTO;
-import com.example.WarmTea.Dtos.UsersDto.LoginResponseDTO;
+import com.example.WarmTea.Dtos.UsersDto;
 import com.example.WarmTea.Dtos.UsersDto.UserRequestDTO;
 import com.example.WarmTea.Dtos.UsersDto.UserResponseDTO;
-import com.example.WarmTea.Models.Users;
 import com.example.WarmTea.Service.UsersService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -20,86 +23,95 @@ public class UsersController {
 
     private final UsersService usersService;
 
-    // 🔹 GET — получить всех пользователей
+    // === Получить всех пользователей ===
     @GetMapping
-    public List<UserResponseDTO> getAllUsers() {
-        return usersService.getAllUsers()
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    @Operation(
+            summary = "Получить список всех пользователей",
+            description = "Возвращает список всех зарегистрированных пользователей"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Список успешно получен",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = UsersDto.UserResponseDTO.class))
+    )
+    public ResponseEntity<List<UsersDto.UserResponseDTO>> getAllUsers() {
+        return ResponseEntity.ok(usersService.getAllUsers());
     }
 
-    // 🔹 GET — получить по id
+    // === Получить пользователя по ID ===
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id) {
-        Users user = usersService.getUserById(id);
-        if (user != null) {
-            return ResponseEntity.ok(toDTO(user));
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    @Operation(
+            summary = "Получить пользователя по ID",
+            description = "Возвращает информацию о пользователе по его уникальному идентификатору"
+    )
+    @ApiResponse(responseCode = "200", description = "Пользователь найден")
+    @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+    public ResponseEntity<UsersDto.UserResponseDTO> getUserById(
+            @Parameter(description = "ID пользователя", example = "1")
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(usersService.getUserById(id));
     }
 
-    // 🔹 GET — получить по email
+    // === Получить пользователя по email ===
     @GetMapping("/by-email")
-    public ResponseEntity<UserResponseDTO> getUserByEmail(@RequestParam String email) {
-        Users user = usersService.getUserByEmail(email);
+    @Operation(
+            summary = "Получить пользователя по email",
+            description = "Возвращает данные пользователя по его email"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Пользователь найден",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = UsersDto.UserResponseDTO.class)
+            )
+    )
+    @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+    public ResponseEntity<UsersDto.UserResponseDTO> getUserByEmail(
+            @Parameter(description = "Email пользователя для поиска", example = "user@example.com")
+            @RequestParam String email
+    ) {
+        UsersDto.UserResponseDTO user = usersService.getUserByEmail(email);
         if (user != null) {
-            return ResponseEntity.ok(toDTO(user));
+            return ResponseEntity.ok(user);
         } else {
             return ResponseEntity.notFound().build();
         }
     }
 
-    // 🔹 POST — создать пользователя
-    @PostMapping
-    public ResponseEntity<UserResponseDTO> createUser(@RequestBody UserRequestDTO request) {
-        UserResponseDTO createdUser = usersService.createUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
-    }
-
-    // 🔹 POST — логин
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
-        LoginResponseDTO tokenResponse = usersService.login(request);
-        if (tokenResponse == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        return ResponseEntity.ok(tokenResponse);
-    }
-
-    // 🔹 PUT — обновить данные пользователя
+    // === Обновить данные пользователя ===
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> updateUser(
+    @Operation(
+            summary = "Обновить данные пользователя",
+            description = "Позволяет изменить информацию о пользователе по его ID"
+    )
+    @ApiResponse(responseCode = "200", description = "Данные успешно обновлены")
+    @ApiResponse(responseCode = "400", description = "Ошибка валидации данных")
+    @RequestBody(
+            description = "Обновляемые данные пользователя",
+            required = true,
+            content = @Content(schema = @Schema(implementation = UsersDto.UserRequestDTO.class))
+    )
+    public ResponseEntity<UsersDto.UserResponseDTO> updateUser(
+            @Parameter(description = "ID пользователя", example = "1")
             @PathVariable Long id,
-            @RequestBody UserRequestDTO request,
-            @RequestHeader("Authorization") String authHeader) {
-
-        UserResponseDTO updatedUser = usersService.updateUser(id, request);
-        if (updatedUser != null) {
-            return ResponseEntity.ok(updatedUser);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+            @org.springframework.web.bind.annotation.RequestBody UsersDto.UserRequestDTO dto
+    ) {
+        return ResponseEntity.ok(usersService.updateUser(id, dto));
     }
 
-    // 🔹 DELETE — удалить пользователя
+    // === Удалить пользователя ===
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        if (usersService.deleteUser(id)) {
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    // 🔸 mapper Users -> UserResponseDTO
-    private UserResponseDTO toDTO(Users user) {
-        return new UserResponseDTO(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getCreated_at()
-        );
+    @Operation(summary = "Удалить пользователя", description = "Удаляет пользователя по ID")
+    @ApiResponse(responseCode = "204", description = "Пользователь успешно удалён")
+    @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+    public ResponseEntity<Void> deleteUser(
+            @Parameter(description = "ID пользователя", example = "1")
+            @PathVariable Long id
+    ) {
+        usersService.deleteUser(id);
+        return ResponseEntity.noContent().build();
     }
 }

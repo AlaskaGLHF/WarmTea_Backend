@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "movies") // соответствует таблице movies в БД
+@Table(name = "movies")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,11 +19,10 @@ public class Movie {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String kpId;          // ID на Кинопоиске (может быть null)
+    private Long kpId;          // ID на Кинопоиске (может быть null)
     private String title;         // Название фильма
     private String description;   // Полное описание
     private String shortDescription; // Короткое описание для карточек
-    private String slogan;        // Слоган фильма
     private int releaseYear;      // Год выпуска
     private int duration;         // Длительность в минутах
     private double rating;        // Средний рейтинг на сайте
@@ -34,11 +33,11 @@ public class Movie {
     private String videoUrl;      // Ссылка на видео в облаке
     private String country;       // Страна производства
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "type_id")
     private MovieType type;       // Связь с таблицей movie_types
 
-    private int typeNumber;       // Номер сезона/часть
+    private int typeNumber; // Номер сезона/часть
 
     private OffsetDateTime createdAt = OffsetDateTime.now();
     private OffsetDateTime updatedAt = OffsetDateTime.now();

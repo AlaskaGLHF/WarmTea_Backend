@@ -9,7 +9,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "users")
-@Data // Lombok: геттеры, сеттеры, toString, equals, hashCode
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

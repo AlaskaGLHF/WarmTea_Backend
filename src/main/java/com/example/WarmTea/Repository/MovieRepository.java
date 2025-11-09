@@ -12,7 +12,7 @@ import java.util.Optional;
 @Repository
 public interface MovieRepository extends JpaRepository<Movie, Long> {
 
-    // Поиск фильма по названию
+
     Optional<Movie> findByTitle(String title);
 
     // Проверка существования фильма с указанным названием
@@ -27,4 +27,5 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
         WHERE g.name IN :genreNames
     """)
     List<Movie> findByGenreNames(@Param("genreNames") List<String> genreNames);
+
 }

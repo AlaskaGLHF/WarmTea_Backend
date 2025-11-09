@@ -1,104 +1,91 @@
 package com.example.WarmTea.Service;
 
-import com.example.WarmTea.Dtos.UsersDto.LoginRequestDTO;
-import com.example.WarmTea.Dtos.UsersDto.LoginResponseDTO;
 import com.example.WarmTea.Dtos.UsersDto.UserRequestDTO;
 import com.example.WarmTea.Dtos.UsersDto.UserResponseDTO;
-import com.example.WarmTea.Models.Users;
+import com.example.WarmTea.Models.User;
 import com.example.WarmTea.Repository.UsersRepository;
 import com.example.WarmTea.Utils.JwtUtils;
-
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UsersService {
 
     private final UsersRepository usersRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
 
-    public UsersService(UsersRepository usersRepository, PasswordEncoder passwordEncoder, JwtUtils jwtUtils) {
-        this.usersRepository = usersRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtils = jwtUtils;
+    // 🔹 Получить всех пользователей
+    public List<UserResponseDTO> getAllUsers() {
+        return usersRepository.findAll()
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
-    public List<Users> getAllUsers() {
-        return usersRepository.findAll();
+    // 🔹 Получить пользователя по ID
+    public UserResponseDTO getUserById(Long id) {
+        return usersRepository.findById(id)
+                .map(this::toDTO)
+                .orElse(null);
     }
 
-    public Users getUserById(Long id) {
-        return usersRepository.findById(id).orElse(null);
+    // 🔹 Получить пользователя по email
+    public UserResponseDTO getUserByEmail(String email) {
+        User user = usersRepository.findByEmail(email);
+        return user != null ? toDTO(user) : null;
     }
 
-    public Users getUserByEmail(String email) {
-        return usersRepository.findByEmail(email);
-    }
-
-
-    public UserResponseDTO createUser(UserRequestDTO userRequestDTO) {
-        String hashedPassword = passwordEncoder.encode(userRequestDTO.getPassword());
-        Users entity = new Users();
-        entity.setUsername(userRequestDTO.getUsername());
-        entity.setEmail(userRequestDTO.getEmail());
-        entity.setPassword_hash(hashedPassword);
-
-        Users savedUser = usersRepository.save(entity);
-        return toDTO(savedUser);
-    }
-
+    // 🔹 Обновление пользователя
     public UserResponseDTO updateUser(Long id, UserRequestDTO request) {
-        Optional<Users> existingOpt = usersRepository.findById(id);
-        if (existingOpt.isEmpty()) {
+        User existing = usersRepository.findById(id).orElse(null);
+        if (existing == null) {
             return null;
         }
 
-        Users existing = existingOpt.get();
-        existing.setUsername(request.getUsername());
         existing.setEmail(request.getEmail());
-        existing.setPassword_hash(passwordEncoder.encode(request.getPassword()));
+        existing.setFirstName(request.getFirstName());
+        existing.setLastName(request.getLastName());
+        existing.setCountry(request.getCountry());
+        existing.setAvatarUrl(request.getAvatarUrl());
+        existing.setDateOfBirth(request.getDateOfBirth());
+        existing.setUpdatedAt(OffsetDateTime.now());
 
-        Users updated = usersRepository.save(existing);
+        User updated = usersRepository.save(existing);
         return toDTO(updated);
     }
 
+    // 🔹 Удаление пользователя
     public boolean deleteUser(Long id) {
-        if (usersRepository.existsById(id)) {
-            usersRepository.deleteById(id);
-            return true;
+        if (!usersRepository.existsById(id)) {
+            return false;
         }
-        return false;
+        usersRepository.deleteById(id);
+        return true;
     }
 
-    public LoginResponseDTO login(LoginRequestDTO request) {
-        Optional<Users> userOpt = usersRepository.findByUsername(request.getUsername());
-        if (userOpt.isEmpty()) {
-            return null;
-        }
-
-        Users user = userOpt.get();
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword_hash())) {
-            return null;
-        }
-
-        String token = jwtUtils.generateToken(user.getUsername());
-        return new LoginResponseDTO(token);
-    }
-
-
-    // === Вспомогательный метод для маппинга на DTO ===
-    private UserResponseDTO toDTO(Users user) {
-        return new UserResponseDTO(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getCreated_at()
-        );
+    // 🔹 Преобразование сущности в DTO
+    private UserResponseDTO toDTO(User user) {
+        return UserResponseDTO.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .country(user.getCountry())
+                .avatarUrl(user.getAvatarUrl())
+                .roleName(user.getRole() != null ? user.getRole().getName() : null)
+                .dateOfBirth(user.getDateOfBirth())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
     }
 }
