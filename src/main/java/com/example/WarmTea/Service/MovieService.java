@@ -3,18 +3,17 @@ package com.example.WarmTea.Service;
 import com.example.WarmTea.Dtos.MovieDto;
 import com.example.WarmTea.Dtos.MovieDto.MovieRequestDto;
 import com.example.WarmTea.Dtos.MovieDto.MovieResponseDto;
-import com.example.WarmTea.Models.Genre;
-import com.example.WarmTea.Models.Movie;
-import com.example.WarmTea.Models.MovieGenre;
-import com.example.WarmTea.Models.MovieGenreKey;
+import com.example.WarmTea.Models.*;
 import com.example.WarmTea.Repository.GenreRepository;
 import com.example.WarmTea.Repository.MovieRepository;
 import com.example.WarmTea.Repository.MovieTypeRepository;
 import com.example.WarmTea.Utils.FileValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -41,7 +40,7 @@ public class MovieService {
         this.s3Service = s3Service;
     }
 
-    // 🔹 Получить все фильмы
+    // === Получить все фильмы ===
     public List<MovieResponseDto> getAllMovies() {
         return movieRepository.findAll()
                 .stream()
@@ -49,75 +48,106 @@ public class MovieService {
                 .collect(Collectors.toList());
     }
 
-    // 🔹 Получить фильм по ID
+    // === Получить фильм по ID ===
     public MovieResponseDto getMovieById(Long id) {
         return movieRepository.findById(id)
                 .map(this::toResponseDto)
                 .orElse(null);
     }
 
-    // 🔹 Создать фильм
+    // === Создать фильм ===
+    @Transactional
     public MovieResponseDto createMovie(MovieRequestDto dto) {
         try {
-            Movie movie = new Movie();
-            movie.setKpId(dto.getKp_Id());
-            movie.setTitle(dto.getTitle());
-            movie.setDescription(dto.getDescription());
-            movie.setShortDescription(dto.getShort_description());
-            movie.setReleaseYear(dto.getReleaseYear());
-            movie.setDuration(dto.getDuration());
-            movie.setTypeNumber(dto.getType_number());
-            movie.setStatus(dto.getStatus());
-            movie.setRatingMpaa(dto.getRating_mpaa());
-            movie.setAgeRating(dto.getAge_rating());
-            movie.setRating(dto.getRating());
-            movie.setCountry(dto.getCountry());
-            movie.setCreatedAt(dto.getCreatedAt() != null ? dto.getCreatedAt() : OffsetDateTime.now());
-            movie.setUpdatedAt(dto.getUpdatedAt() != null ? dto.getUpdatedAt() : OffsetDateTime.now());
+            log.info("=== START создания фильма: {}", dto.getTitle());
 
+            log.info("1. Получение типа фильма с type_number={}", dto.getType_number());
+            MovieType movieType = getMovieType(dto.getType_number());
+            log.info("Тип фильма найден: {}", movieType.getName());
+
+            log.info("2. Создание сущности Movie");
+            Movie movie = buildMovieEntity(dto, movieType);
+
+            log.info("3. Загрузка файлов на S3");
+            uploadFilesToS3(dto, movie);
+            log.info("Файлы загружены: logoUrl={}, videoUrl={}", movie.getLogoUrl(), movie.getVideoUrl());
+
+            log.info("4. Сохранение фильма без жанров");
             Movie savedMovie = movieRepository.save(movie);
+            log.info("Фильм сохранён с id={}", savedMovie.getId());
 
-            // Загрузка файлов
-            String rootFolder = dto.getType_number() == 1 ? "films" : "serials";
-            String movieFolder = rootFolder + "/" + sanitizeFolderName(savedMovie.getTitle());
-
-            if (dto.getLogoFile() != null && !dto.getLogoFile().isEmpty()) {
-                FileValidator.validateFileExtension(dto.getLogoFile(), List.of("png", "jpg", "jpeg", "gif"));
-                String logoUrl = s3Service.uploadFile(dto.getLogoFile(), movieFolder + "/logo/");
-                savedMovie.setLogoUrl(logoUrl);
-            }
-            if (dto.getVideoFile() != null && !dto.getVideoFile().isEmpty()) {
-                FileValidator.validateFileExtension(dto.getVideoFile(), List.of("mp4", "avi", "mkv"));
-                String videoUrl = s3Service.uploadFile(dto.getVideoFile(), movieFolder + "/video/");
-                savedMovie.setVideoUrl(videoUrl);
+            if (dto.getGenreIds() != null && !dto.getGenreIds().isEmpty()) {
+                log.info("5. Привязка жанров к фильму: {}", dto.getGenreIds());
+                attachGenresToMovie(savedMovie, dto.getGenreIds());
+                log.info("Жанры успешно привязаны");
             }
 
-            // Привязка жанров
-            List<Genre> genres = genreRepository.findAllById(dto.getGenreIds());
-            final Movie finalSavedMovie = savedMovie;
-
-            List<MovieGenre> movieGenres = genres.stream()
-                    .map(genre -> {
-                        MovieGenre mg = new MovieGenre();
-                        mg.setId(new MovieGenreKey(finalSavedMovie.getId(), genre.getId()));
-                        mg.setMovie(finalSavedMovie);
-                        mg.setGenre(genre);
-                        return mg;
-                    })
-                    .collect(Collectors.toList());
-
-            savedMovie.setMovieGenres(movieGenres);
-            savedMovie = movieRepository.save(savedMovie);
-
+            log.info("=== END создания фильма: {}", dto.getTitle());
             return toResponseDto(savedMovie);
 
         } catch (Exception e) {
             log.error("Ошибка при создании фильма: {}", e.getMessage(), e);
-            throw new RuntimeException("Ошибка при создании фильма: " + e.getMessage());
+            throw new RuntimeException("Ошибка при создании фильма: " + e.getMessage(), e);
         }
     }
 
-    // 🔹 Обновить фильм
+    private MovieType getMovieType(Integer typeNumber) {
+        if (typeNumber == null || typeNumber <= 0) {
+            throw new RuntimeException("Не указан или некорректный тип фильма");
+        }
+        return movieTypeRepository.findById(Long.valueOf(typeNumber))
+                .orElseThrow(() -> new RuntimeException("Тип фильма с id " + typeNumber + " не найден"));
+    }
+
+    private Movie buildMovieEntity(MovieRequestDto dto, MovieType type) {
+        return Movie.builder()
+                .kpId(dto.getKp_Id())
+                .title(dto.getTitle())
+                .description(dto.getDescription())
+                .shortDescription(dto.getShort_description())
+                .releaseYear(dto.getReleaseYear())
+                .duration(dto.getDuration())
+                .status(dto.getStatus())
+                .ratingMpaa(dto.getRating_mpaa())
+                .ageRating(dto.getAge_rating())
+                .rating(dto.getRating())
+                .country(dto.getCountry())
+                .createdAt(OffsetDateTime.now())
+                .updatedAt(OffsetDateTime.now())
+                .movieGenres(new ArrayList<>())
+                .type(type)
+                .build();
+    }
+
+    private void uploadFilesToS3(MovieRequestDto dto, Movie movie) {
+        String folderRoot = movie.getType().getId() == 1 ? "films" : "serials";
+        String folder = folderRoot + "/" + sanitizeFolderName(movie.getTitle());
+
+        if (dto.getLogoFile() != null && !dto.getLogoFile().isEmpty()) {
+            log.info("Загрузка логотипа фильма на S3");
+            FileValidator.validateFileExtension(dto.getLogoFile(), List.of("png", "jpg", "jpeg"));
+            movie.setLogoUrl(s3Service.uploadFile(dto.getLogoFile(), folder + "/logo/"));
+        }
+        if (dto.getVideoFile() != null && !dto.getVideoFile().isEmpty()) {
+            log.info("Загрузка видео фильма на S3");
+            FileValidator.validateFileExtension(dto.getVideoFile(), List.of("mp4", "mkv", "avi"));
+            movie.setVideoUrl(s3Service.uploadFile(dto.getVideoFile(), folder + "/video/"));
+        }
+    }
+
+    private void attachGenresToMovie(Movie movie, List<Long> genreIds) {
+        List<Genre> genres = genreRepository.findAllById(genreIds);
+        for (Genre genre : genres) {
+            MovieGenre mg = new MovieGenre();
+            mg.setId(new MovieGenreKey(movie.getId(), genre.getId()));
+            mg.setMovie(movie);
+            mg.setGenre(genre);
+            movie.getMovieGenres().add(mg);
+        }
+        movieRepository.save(movie);
+    }
+
+    // === Обновить фильм ===
     public MovieResponseDto updateMovie(Long id, MovieRequestDto dto) {
         try {
             Optional<Movie> existingOpt = movieRepository.findById(id);
@@ -130,7 +160,7 @@ public class MovieService {
             existing.setShortDescription(dto.getShort_description());
             existing.setReleaseYear(dto.getReleaseYear());
             existing.setDuration(dto.getDuration());
-            existing.setTypeNumber(dto.getType_number());
+            existing.setType(getMovieType(dto.getType_number()));
             existing.setStatus(dto.getStatus());
             existing.setRatingMpaa(dto.getRating_mpaa());
             existing.setAgeRating(dto.getAge_rating());
@@ -176,7 +206,7 @@ public class MovieService {
         }
     }
 
-    // 🔹 Удалить фильм
+    // === Удалить фильм ===
     public boolean deleteMovie(Long id) {
         if (movieRepository.existsById(id)) {
             movieRepository.deleteById(id);
@@ -185,7 +215,7 @@ public class MovieService {
         return false;
     }
 
-    // 🔹 Получить фильмы по жанрам
+    // === Получить фильмы по жанрам ===
     public List<MovieResponseDto> getMoviesByGenres(List<String> genreNames) {
         if (genreNames == null || genreNames.isEmpty()) return List.of();
 
@@ -195,7 +225,7 @@ public class MovieService {
                 .collect(Collectors.toList());
     }
 
-    // 🔹 Преобразование Movie → DTO с рейтингами из Кинопоиска
+    // === Преобразование Movie → DTO ===
     private MovieResponseDto toResponseDto(Movie movie) {
         List<String> genreNames = movie.getMovieGenres().stream()
                 .map(mg -> mg.getGenre().getName())
@@ -215,8 +245,8 @@ public class MovieService {
                 .short_description(movie.getShortDescription())
                 .releaseYear(movie.getReleaseYear())
                 .duration(movie.getDuration())
-                .type_number(movie.getTypeNumber())
-                .type(movie.getType() != null ? movie.getType().getName() : null)
+                .type_number(movie.getType() != null ? movie.getType().getId().intValue() : 0)
+                .type(movie.getType().getName())
                 .status(movie.getStatus())
                 .rating_mpaa(movie.getRatingMpaa())
                 .age_rating(movie.getAgeRating())

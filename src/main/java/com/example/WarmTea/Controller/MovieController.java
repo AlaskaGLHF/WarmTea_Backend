@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -62,7 +63,10 @@ public class MovieController {
     }
 
     // === Создать фильм ===
-    @Operation(summary = "Создать новый фильм", description = "Добавляет новый фильм в базу данных")
+    @Operation(
+            summary = "Создать новый фильм",
+            description = "Добавляет новый фильм с файлами и записывает URL в базу данных"
+    )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "201",
@@ -74,12 +78,16 @@ public class MovieController {
             ),
             @ApiResponse(responseCode = "400", description = "Некорректные данные", content = @Content)
     })
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MovieDto.MovieResponseDto> createMovie(
-            @Valid @RequestBody MovieDto.MovieRequestDto dto
+            @Valid @ModelAttribute MovieDto.MovieRequestDto dto
     ) throws IOException {
-        MovieDto.MovieResponseDto created = movieService.createMovie(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+
+        MovieDto.MovieResponseDto createdMovie = movieService.createMovie(dto);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(createdMovie);
     }
 
     // === Обновить фильм ===

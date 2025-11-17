@@ -23,7 +23,7 @@ public class UsersService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
 
-    // 🔹 Получить всех пользователей
+    // === Получить всех пользователей ===
     public List<UserResponseDTO> getAllUsers() {
         return usersRepository.findAll()
                 .stream()
@@ -31,20 +31,20 @@ public class UsersService {
                 .collect(Collectors.toList());
     }
 
-    // 🔹 Получить пользователя по ID
+    // === Получить пользователя по ID ===
     public UserResponseDTO getUserById(Long id) {
         return usersRepository.findById(id)
                 .map(this::toDTO)
                 .orElse(null);
     }
 
-    // 🔹 Получить пользователя по email
+    // === Получить пользователя по email ===
     public UserResponseDTO getUserByEmail(String email) {
         User user = usersRepository.findByEmail(email);
         return user != null ? toDTO(user) : null;
     }
 
-    // 🔹 Обновление пользователя
+    // === Обновление пользователя ===
     public UserResponseDTO updateUser(Long id, UserRequestDTO request) {
         User existing = usersRepository.findById(id).orElse(null);
         if (existing == null) {
@@ -63,7 +63,7 @@ public class UsersService {
         return toDTO(updated);
     }
 
-    // 🔹 Удаление пользователя
+    // === Удаление пользователя ===
     public boolean deleteUser(Long id) {
         if (!usersRepository.existsById(id)) {
             return false;
@@ -72,7 +72,7 @@ public class UsersService {
         return true;
     }
 
-    // 🔹 Преобразование сущности в DTO
+    // === Преобразование сущности в DTO ===
     private UserResponseDTO toDTO(User user) {
         return UserResponseDTO.builder()
                 .id(user.getId())

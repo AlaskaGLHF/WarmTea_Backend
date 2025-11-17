@@ -1,19 +1,24 @@
 package com.example.WarmTea.Models;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serializable;
 
 // ===== MovieGenreKey =====
 @Embeddable
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class MovieGenreKey implements Serializable {
 
-    private Long movieId = 0L;
-    private Long genreId = 0L;
+    @Column(name = "movie_id")
+    private Long movieId;
+
+    @Column(name = "genre_id")
+    private Long genreId;
 }
+
+

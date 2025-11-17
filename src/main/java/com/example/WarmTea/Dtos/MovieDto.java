@@ -90,9 +90,6 @@ public class MovieDto {
     @Schema(description = "Запрос на создание или обновление фильма")
     public static class MovieRequestDto {
 
-        @Schema(description = "ID фильма (указывается при обновлении)", example = "1")
-        private Long id;
-
         @Schema(description = "ID фильма на Кинопоиске", example = "1234567")
         private Long Kp_Id;
 

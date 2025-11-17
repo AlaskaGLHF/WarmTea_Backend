@@ -35,22 +35,22 @@ public class User {
     private OffsetDateTime createdAt = OffsetDateTime.now();
     private OffsetDateTime updatedAt = OffsetDateTime.now();
 
-    // ---------- Избранные фильмы ----------
+    // === Избранные фильмы ===
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Favorite> favorites = new ArrayList<>();
 
-    // ---------- История просмотров ----------
+    // === История просмотров ===
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<WatchHistory> watchHistories = new ArrayList<>();
 
-    // ---------- Рейтинги ----------
+    // === Рейтинги ===
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Rating> ratings = new ArrayList<>();
 
-    // ---------- Refresh токены ----------
+    // === Refresh токены ===
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<RefreshToken> refreshTokens = new ArrayList<>();

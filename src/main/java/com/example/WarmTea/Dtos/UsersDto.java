@@ -36,7 +36,7 @@ public class UsersDto {
         @Schema(description = "URL аватара пользователя", example = "https://cdn.example.com/avatars/user123.png")
         private String avatarUrl;
 
-        @Schema(description = "Роль пользователя в системе", example = "ROLE_USER")
+        @Schema(description = "Роль пользователя в системе", example = "USER")
         private String roleName;
 
         @Schema(description = "Дата рождения пользователя", example = "1998-05-20T00:00:00Z")

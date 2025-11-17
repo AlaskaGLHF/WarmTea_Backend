@@ -19,7 +19,6 @@ public class Genre {
 
     private String name; // Action, Comedy, Drama и т.д.
 
-    // Связь с фильмами через MovieGenre (M:N)
     @OneToMany(mappedBy = "genre", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<MovieGenre> movieGenres = new ArrayList<>();
