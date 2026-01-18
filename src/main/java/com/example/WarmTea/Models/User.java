@@ -27,6 +27,7 @@ public class User {
     private OffsetDateTime dateOfBirth; // Дата рождения
     private String country;        // Страна
     private String avatarUrl;      // Ссылка на аватар
+    private Boolean is_delete;
 
     @ManyToOne
     @JoinColumn(name = "role_id")

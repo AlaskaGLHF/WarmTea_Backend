@@ -1,26 +1,25 @@
 package com.example.WarmTea.Models;
 
 import jakarta.persistence.*;
-import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 // ===== MovieGenre =====
 @Entity
-@Table(name = "movie_genres")
+@Table(name = "genres_link")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MovieGenre {
+public class GenresLink {
 
     @EmbeddedId
-    private MovieGenreKey id;
+    private ContentGenreKey id;
 
     @ManyToOne
-    @MapsId("movieId")
-    @JoinColumn(name = "movie_id")
-    private Movie movie;
+    @MapsId("contentId")
+    @JoinColumn(name = "content_id")
+    private Content content;
 
     @ManyToOne
     @MapsId("genreId")

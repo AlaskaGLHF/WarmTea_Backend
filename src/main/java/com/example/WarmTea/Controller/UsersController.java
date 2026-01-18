@@ -1,8 +1,7 @@
 package com.example.WarmTea.Controller;
 
 import com.example.WarmTea.Dtos.UsersDto;
-import com.example.WarmTea.Dtos.UsersDto.UserRequestDTO;
-import com.example.WarmTea.Dtos.UsersDto.UserResponseDTO;
+
 import com.example.WarmTea.Service.UsersService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -111,7 +110,37 @@ public class UsersController {
             @Parameter(description = "ID пользователя", example = "1")
             @PathVariable Long id
     ) {
+        // Вызываем сервис для выполнения операции удаления
         usersService.deleteUser(id);
+
+        // Возвращаем статус 204 No Content, как ожидается для успешного DELETE
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/me")
+    @Operation(
+            summary = "Получить пользователя по токену",
+            description = "Возвращает данные пользователя по его токену"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Пользователь найден",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = UsersDto.UserResponseDTO.class)
+            )
+    )
+    @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+    public ResponseEntity<UsersDto.UserResponseDTO> getUser(
+            @Parameter(description = "Токен пользователя для поиска", example = "")
+            @RequestParam String token
+    ) {
+        UsersDto.UserResponseDTO user = usersService.showMe(token);
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
 }

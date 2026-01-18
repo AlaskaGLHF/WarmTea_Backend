@@ -8,17 +8,14 @@ import java.io.Serializable;
 
 // ===== MovieGenreKey =====
 @Embeddable
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MovieGenreKey implements Serializable {
-
-    @Column(name = "movie_id")
-    private Long movieId;
+public class ContentGenreKey implements Serializable {
+    @Column(name = "content_id")
+    private Long contentId;
 
     @Column(name = "genre_id")
     private Long genreId;
 }
-
 

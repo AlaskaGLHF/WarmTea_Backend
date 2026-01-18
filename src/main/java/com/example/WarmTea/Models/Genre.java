@@ -21,5 +21,5 @@ public class Genre {
 
     @OneToMany(mappedBy = "genre", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<MovieGenre> movieGenres = new ArrayList<>();
+    private List<GenresLink> genresLinks = new ArrayList<>();
 }
