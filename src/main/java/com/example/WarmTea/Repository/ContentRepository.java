@@ -1,6 +1,6 @@
 package com.example.WarmTea.Repository;
 
-import com.example.WarmTea.Models.Movie;
+import com.example.WarmTea.Models.Content;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface MovieRepository extends JpaRepository<Movie, Long> {
+public interface ContentRepository extends JpaRepository<Content, Long> {
 
 
-    Optional<Movie> findByTitle(String title);
+    Optional<Content> findByTitle(String title);
 
     // Проверка существования фильма с указанным названием
     boolean existsByTitle(String title);
@@ -21,11 +21,11 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     // Поиск фильмов по списку названий жанров
     @Query("""
         SELECT DISTINCT m
-        FROM Movie m
-        JOIN m.movieGenres mg
+        FROM Content m
+        JOIN m.genresLinks mg
         JOIN mg.genre g
         WHERE g.name IN :genreNames
     """)
-    List<Movie> findByGenreNames(@Param("genreNames") List<String> genreNames);
+    List<Content> findByGenreNames(@Param("genreNames") List<String> genreNames);
 
 }

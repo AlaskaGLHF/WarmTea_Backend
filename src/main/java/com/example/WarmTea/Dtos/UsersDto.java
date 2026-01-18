@@ -36,7 +36,7 @@ public class UsersDto {
         @Schema(description = "URL аватара пользователя", example = "https://cdn.example.com/avatars/user123.png")
         private String avatarUrl;
 
-        @Schema(description = "Роль пользователя в системе", example = "ROLE_USER")
+        @Schema(description = "Роль пользователя в системе", example = "USER")
         private String roleName;
 
         @Schema(description = "Дата рождения пользователя", example = "1998-05-20T00:00:00Z")
@@ -47,6 +47,9 @@ public class UsersDto {
 
         @Schema(description = "Дата последнего обновления учетной записи", example = "2024-06-10T08:30:00Z")
         private OffsetDateTime updatedAt;
+
+        @Schema(description = "Удалён ли аккаунт пользователя", example = "False")
+        private Boolean is_delete;
     }
 
     // === DTO для запроса ===
@@ -75,4 +78,5 @@ public class UsersDto {
         @Schema(description = "Дата рождения пользователя", example = "1998-05-20T00:00:00Z")
         private OffsetDateTime dateOfBirth;
     }
+
 }
