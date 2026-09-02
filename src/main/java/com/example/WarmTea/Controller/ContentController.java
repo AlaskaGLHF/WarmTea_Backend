@@ -1,6 +1,8 @@
 package com.example.WarmTea.Controller;
 
 import com.example.WarmTea.Dtos.ContentDto;
+import com.example.WarmTea.Dtos.TrackDto;
+import com.example.WarmTea.Models.Episode;
 import com.example.WarmTea.Service.ContentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -9,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -42,10 +46,15 @@ public class ContentController {
         return contentService.getAllContent();
     }
 
-    @Operation(summary = "Получить каталог контента (кратко)", description = "Возвращает список контента в кратком формате для плиток")
+    @Operation(summary = "Получить каталог контента (кратко)", description = "Возвращает страницу контента в кратком формате для плиток")
     @GetMapping
-    public List<ContentDto.ShortContentDto> getAllContentShort() {
-        return contentService.getAllContentShort();
+    public ResponseEntity<Page<ContentDto.ShortContentDto>> getAllContentShort(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size
+    ) {
+
+        return ResponseEntity.ok(contentService.getAllContentShort(page, size));
+
     }
 
     @Operation(summary = "Получить контент по ID", description = "Возвращает полную информацию о контенте (включая серии для сериалов)")
@@ -55,8 +64,10 @@ public class ContentController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<ContentDto.ContentResponseDto> getContentById(@PathVariable Long id) {
+
         ContentDto.ContentResponseDto content = contentService.getContentById(id);
         return content != null ? ResponseEntity.ok(content) : ResponseEntity.notFound().build();
+
     }
 
     @Operation(summary = "Создать новый контент", description = "Добавляет фильм/сериал/аниме и загружает файлы на S3")
@@ -64,26 +75,34 @@ public class ContentController {
     public ResponseEntity<ContentDto.ContentResponseDto> createContent(
             @Valid @ModelAttribute ContentDto.ContentRequestDto dto
     ) throws IOException {
+
         ContentDto.ContentResponseDto created = contentService.createContent(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+
     }
 
     @Operation(summary = "Обновить данные контента")
     @PutMapping("/{id}")
     public ResponseEntity<ContentDto.ContentResponseDto> updateContent(
+
             @PathVariable Long id,
             @Valid @RequestBody ContentDto.ContentRequestDto dto
+
     ) throws IOException {
+
         ContentDto.ContentResponseDto updated = contentService.updateContent(id, dto);
         return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
+
     }
 
     @Operation(summary = "Удалить контент")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteContent(@PathVariable Long id) {
+
         return contentService.deleteContent(id)
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.notFound().build();
+
     }
 
     @Operation(summary = "Поиск контента по жанрам", description = "Например: /api/content/search?genres=action,sci-fi")
@@ -96,4 +115,71 @@ public class ContentController {
 
         return contentService.getContentByGenres(genreList);
     }
+
+    @Operation(summary = "Добавить в избранное", description = "Принимает userId и contentId в теле запроса")
+    @PostMapping("/favorites/add")
+    public ResponseEntity<Void> addToFavorites(@RequestBody Map<String, Long> payload) {
+        Long userId = payload.get("userId");
+        Long contentId = payload.get("contentId");
+
+        if (userId == null || contentId == null) {
+
+            return ResponseEntity.badRequest().build();
+
+        }
+
+        contentService.addToFavorites(userId, contentId);
+        return ResponseEntity.ok().build();
+
+    }
+
+    @Operation(summary = "Удалить из избранного", description = "Удаляет связь контента с пользователем")
+    @DeleteMapping("/favorites/remove/{userId}/{contentId}")
+    public ResponseEntity<Void> removeFromFavorites(
+
+            @PathVariable Long userId,
+            @PathVariable Long contentId
+
+    ) {
+
+        contentService.removeFromFavorites(userId, contentId);
+        return ResponseEntity.noContent().build();
+
+    }
+
+    @GetMapping("/favorites/ids/{userId}")
+    public ResponseEntity<List<Long>> getFavoriteIds(@PathVariable Long userId) {
+        return ResponseEntity.ok(contentService.getFavoriteIds(userId));
+    }
+
+    @Operation(summary = "Получить полные данные избранного для профиля")
+    @GetMapping("/favorites/full/{userId}")
+    public ResponseEntity<List<ContentDto.ShortContentDto>> getFullFavorites(@PathVariable Long userId) {
+        return ResponseEntity.ok(contentService.getFullFavorites(userId));
+    }
+
+    // ContentController.java
+
+    @GetMapping("/random")
+    @Operation(
+            summary = "Получить случайные записи контента по типу",
+            description = "Возвращает указанное количество случайных записей заданного типа (MOVIE, SERIES, ANIME)"
+    )
+    @ApiResponse(responseCode = "200", description = "Список случайных записей")
+    public ResponseEntity<List<ContentDto.ShortContentDto>> getRandomContent(
+            @RequestParam String type,
+            @RequestParam(defaultValue = "5") int limit
+    ) {
+        List<ContentDto.ShortContentDto> randomContent = contentService.getRandomContentByType(type, limit);
+        return ResponseEntity.ok(randomContent);
+    }
+
+    @DeleteMapping("/{contentId}/genres/{genreId}")
+    public ResponseEntity<Void> removeGenreFromContent(
+            @PathVariable Long contentId,
+            @PathVariable Long genreId) {
+        contentService.removeGenreFromContent(contentId, genreId);
+        return ResponseEntity.noContent().build();
+    }
+
 }

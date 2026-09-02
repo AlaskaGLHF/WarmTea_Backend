@@ -8,7 +8,7 @@ import java.util.List;
 
 @Repository
 public interface GenreRepository extends JpaRepository<Genre, Long> {
-
+    ;
     // Поиск всех жанров по списку названий
     List<Genre> findAllByNameIn(List<String> names);
 }

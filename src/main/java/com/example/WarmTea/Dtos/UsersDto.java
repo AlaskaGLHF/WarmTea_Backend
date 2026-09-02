@@ -1,6 +1,8 @@
 package com.example.WarmTea.Dtos;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import java.time.OffsetDateTime;
 
@@ -50,6 +52,8 @@ public class UsersDto {
 
         @Schema(description = "Удалён ли аккаунт пользователя", example = "False")
         private Boolean is_delete;
+
+        private String token;
     }
 
     // === DTO для запроса ===
@@ -59,6 +63,9 @@ public class UsersDto {
     @Builder
     @Schema(description = "Запрос для обновления данных пользователя")
     public static class UserRequestDTO {
+
+        @Schema(description = "Никнейм пользователя", example = "AleshaPopovich")
+        private String username;
 
         @Schema(description = "Электронная почта пользователя", example = "new_email@example.com")
         private String email;

@@ -31,20 +31,28 @@ public class Content {
     @Enumerated(EnumType.STRING)
     private ContentType type; // MOVIE, SERIES, ANIME
 
+    private Double rating;
+
+    // Новое поле для разделения логики Фильм/Сериал
+    @Column(name = "is_single_video")
+    private boolean isSingleVideo;
+
     private int releaseYear;
     private int duration; // Для фильма - общая, для сериала - средняя серии
-    private double rating;
     private int ageRating;
     private String status;
     private String logoUrl;
-    private String videoUrl; // Заполняется только если type == MOVIE
+    private String videoUrl; // Заполняется только если isSingleVideo == true
     private String country;
 
+    @Builder.Default
     private OffsetDateTime createdAt = OffsetDateTime.now();
+
+    @Builder.Default
     private OffsetDateTime updatedAt = OffsetDateTime.now();
 
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("seasonNumber ASC, episodeNumber ASC") // Чтобы серии всегда шли по порядку
+    @OrderBy("seasonNumber ASC, episodeNumber ASC")
     @Builder.Default
     private List<Episode> episodes = new ArrayList<>();
 
@@ -63,4 +71,13 @@ public class Content {
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Rating> ratings = new ArrayList<>();
+
+    @OneToMany(mappedBy = "content")
+    private List<MediaTrack> mediaTracks;
+
+    // Автоматическое обновление даты при изменении
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = OffsetDateTime.now();
+    }
 }
