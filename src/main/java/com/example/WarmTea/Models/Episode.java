@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "episodes")
@@ -29,6 +31,11 @@ public class Episode {
     private String title;      // Название серии (если есть)
     private String videoUrl;   // Ссылка на видео конкретной серии
     private int duration;      // Длительность серии
+    @Column(columnDefinition = "TEXT")
+    private String thumbnail;
 
     private OffsetDateTime createdAt = OffsetDateTime.now();
+
+    @OneToMany(mappedBy = "episode", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<MediaTrack> mediaTracks = new ArrayList<>();
 }

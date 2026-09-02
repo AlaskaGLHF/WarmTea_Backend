@@ -1,26 +1,37 @@
 package com.example.WarmTea.Controller;
 
+import com.example.WarmTea.Dtos.ChangePasswordRequestDTO;
 import com.example.WarmTea.Dtos.UsersDto;
 
 import com.example.WarmTea.Service.UsersService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Slf4j
 public class UsersController {
 
     private final UsersService usersService;
+    private final ObjectMapper objectMapper;
 
     // === Получить всех пользователей ===
     @GetMapping
@@ -141,6 +152,34 @@ public class UsersController {
         } else {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(
+            HttpServletRequest request,
+            @RequestHeader(value = "Authorization", required = false) String authHeader
+    ) throws IOException {
+        // Читаем тело запроса
+        BufferedReader reader = request.getReader();
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line);
+        }
+        String body = sb.toString();
+
+        // Парсим JSON в DTO вручную
+        ObjectMapper mapper = new ObjectMapper(); // или внедрите бин
+        ChangePasswordRequestDTO dto = mapper.readValue(body, ChangePasswordRequestDTO.class);
+
+        log.info("DTO: {}", dto);
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Отсутствует или некорректный заголовок Authorization");
+        }
+        String token = authHeader.substring(7);
+        usersService.changePassword(token, dto);
+        return ResponseEntity.ok().build();
     }
 
 }

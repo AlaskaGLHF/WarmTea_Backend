@@ -1,10 +1,12 @@
 package com.example.WarmTea.Service;
 
+import com.example.WarmTea.Dtos.ChangePasswordRequestDTO;
 import com.example.WarmTea.Dtos.UsersDto.UserRequestDTO;
 import com.example.WarmTea.Dtos.UsersDto.UserResponseDTO;
 import com.example.WarmTea.Models.User;
 import com.example.WarmTea.Repository.UsersRepository;
 import com.example.WarmTea.Utils.JwtUtils;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,13 +47,28 @@ public class UsersService {
     }
 
     // === Обновление пользователя ===
+    @Transactional
     public UserResponseDTO updateUser(Long id, UserRequestDTO request) {
-        User existing = usersRepository.findById(id).orElse(null);
-        if (existing == null) {
-            return null;
+        User existing = usersRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+
+        // Проверка уникальности username (если изменяется)
+        if (!existing.getUsername().equals(request.getUsername())) {
+            if (usersRepository.existsByUsername(request.getUsername())) {
+                throw new RuntimeException("Имя пользователя уже занято");
+            }
+            existing.setUsername(request.getUsername());
         }
 
-        existing.setEmail(request.getEmail());
+        // Проверка уникальности email (если изменяется)
+        if (!existing.getEmail().equals(request.getEmail())) {
+            if (usersRepository.existsByEmail(request.getEmail())) {
+                throw new RuntimeException("Email уже используется");
+            }
+            existing.setEmail(request.getEmail());
+        }
+
+        // Обновляем остальные поля
         existing.setFirstName(request.getFirstName());
         existing.setLastName(request.getLastName());
         existing.setCountry(request.getCountry());
@@ -60,7 +77,13 @@ public class UsersService {
         existing.setUpdatedAt(OffsetDateTime.now());
 
         User updated = usersRepository.save(existing);
-        return toDTO(updated);
+
+        // Генерируем новый JWT с актуальными данными
+        String newToken = jwtUtils.generateToken(updated);
+
+        UserResponseDTO dto = toDTO(updated);
+        dto.setToken(newToken);
+        return dto;
     }
 
     // === Удаление пользователя ===
@@ -97,6 +120,38 @@ public class UsersService {
             log.error("Ошибка при обработке токена: {}", e.getMessage());
             return null; // Или выбрось свое исключение для обработки в ControllerAdvice
         }
+    }
+
+    public void changePassword(String token, ChangePasswordRequestDTO request) {
+        if (request.getOldPassword() == null || request.getNewPassword() == null) {
+            throw new RuntimeException("Пароли не могут быть пустыми");
+        }
+
+        if (token != null && token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+
+        Long userId = jwtUtils.extractUserId(token);
+        log.info("Смена пароля для userId {}", userId);
+
+        User user = usersRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+
+        // Проверяем старый пароль
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("Неверный старый пароль");
+        }
+
+        // Проверяем, что новый пароль не совпадает со старым
+        if (request.getOldPassword().equals(request.getNewPassword())) {
+            throw new RuntimeException("Новый пароль должен отличаться от старого");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        user.setUpdatedAt(OffsetDateTime.now());
+        usersRepository.save(user);
+
+        log.info("Пароль для пользователя {} успешно обновлён", user.getUsername());
     }
 
     // === Преобразование сущности в DTO ===

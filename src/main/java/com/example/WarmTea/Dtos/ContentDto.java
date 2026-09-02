@@ -65,8 +65,19 @@ public class ContentDto {
         @Schema(description = "Список жанров", example = "[\"Action\", \"Sci-Fi\"]")
         private List<String> genres;
 
+        private List<Long> genreIds;
+
         @Schema(description = "Список эпизодов (для сериалов и аниме)")
         private List<EpisodeResponseDto> episodes;
+
+        private List<TrackDto> tracks;
+
+        private Double averageRating;
+        private Long votesCount;
+
+        private boolean isSingleVideo;
+        private String videoUrl; // Будет заполнено только для фильмов
+        private List<EpisodeResponseDto> seasons;
 
         private OffsetDateTime createdAt;
         private OffsetDateTime updatedAt;
@@ -79,25 +90,46 @@ public class ContentDto {
     @Schema(description = "Запрос на создание или обновление контента")
     public static class ContentRequestDto {
 
-        private Long Kp_Id;
+        @Schema(description = "ID Кинопоиска", example = "1393699")
+        private Long kpId; // Исправлено с Kp_Id на kpId
+
+        @Schema(description = "Название", example = "Хоримия")
         private String title;
+
+        @Schema(description = "Полное описание")
         private String description;
-        private String short_description;
+
+        @Schema(description = "Краткое описание")
+        private String shortDescription;
+
+        @Schema(description = "Год выхода", example = "2021")
         private int releaseYear;
+
+        @Schema(description = "Длительность (мин)", example = "24")
         private int duration;
 
-        @Schema(description = "Тип контента (MOVIE, SERIES, ANIME)", example = "SERIES")
+        @Schema(description = "Тип контента (MOVIE, SERIES, ANIME)", example = "ANIME")
         private String type;
 
+        @Schema(description = "Статус (RELEASED, ONGOING)", example = "RELEASED")
         private String status;
-        private int age_rating;
+
+        @Schema(description = "Возрастной рейтинг", example = "16")
+        private int ageRating;
+
+        @Schema(description = "Рейтинг", example = "8.2")
         private double rating;
+
+        @Schema(description = "Страна", example = "Япония")
         private String country;
 
+        @Schema(description = "Файл логотипа/постера")
         private MultipartFile logoFile;
-        private MultipartFile videoFile; // Только для MOVIE
 
-        @Schema(description = "ID жанров", example = "[1, 2]")
+        @Schema(description = "Видеофайл (для ANIME это может быть master.m3u8 или архив эпизода)")
+        private String videoUrl;
+
+        @Schema(description = "Список ID жанров", example = "[1, 2, 5]")
         private List<Long> genreIds;
     }
 
@@ -114,6 +146,9 @@ public class ContentDto {
         private String type;
         private double rating;
         private String logo_url;
+        private List<String> genres;
+        private Double averageRating;
+        private Long votesCount;
     }
 
     @Data
@@ -126,7 +161,11 @@ public class ContentDto {
         private int seasonNumber;
         private int episodeNumber;
         private String title;
-        private String video_url;
+        private String videoUrl;
         private int duration;
+        private List<TrackDto> tracks;
+        private String thumbnail;
     }
+
+
 }

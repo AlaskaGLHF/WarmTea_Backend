@@ -26,9 +26,9 @@ public class WatchHistory {
 
     @ManyToOne
     @JoinColumn(name = "episode_id")
-    private Episode episode; // null для фильмов
+    private Episode episode;
 
-    private int stoppedAt; // Секунда остановки
+    private int stoppedAt;
 
     private OffsetDateTime watchedAt = OffsetDateTime.now();
 }
