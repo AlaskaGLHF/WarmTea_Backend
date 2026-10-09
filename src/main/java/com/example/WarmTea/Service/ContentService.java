@@ -1,6 +1,5 @@
 package com.example.WarmTea.Service;
 
-import com.example.WarmTea.Dtos.AverageRatingResponseDto;
 import com.example.WarmTea.Dtos.ContentDto;
 import com.example.WarmTea.Dtos.ContentDto.ContentRequestDto;
 import com.example.WarmTea.Dtos.ContentDto.ContentResponseDto;
@@ -30,7 +29,7 @@ public class ContentService {
 
     private final ContentRepository contentRepository;
     private final GenreRepository genreRepository;
-    private final KinopoiskApiService kinopoiskApiService;
+    //private final KinopoiskApiService kinopoiskApiService;
     private final S3Service s3Service;
     private final UsersRepository usersRepository;
     private final FavoriteRepository favoriteRepository;
@@ -152,17 +151,18 @@ public class ContentService {
                         .map(t -> new TrackDto(t.getSrcUrl(), t.getLabel(), t.getLanguageCode(), "subtitles", t.isDefault()))
                         .toList() : Collections.emptyList();
 
-        Optional<KinopoiskApiService.Ratings> ratingsOpt =
-                (content.getKpId() != null && content.getKpId() > 0)
-                        ? Optional.ofNullable(kinopoiskApiService.getMovie(content.getKpId())).map(KinopoiskApiService.MovieApiResponse::getRating)
-                        : Optional.empty();
+//        Optional<KinopoiskApiService.Ratings> ratingsOpt =
+//                (content.getKpId() != null && content.getKpId() > 0)
+//                        ? Optional.ofNullable(kinopoiskApiService.getMovie(content.getKpId())).map(KinopoiskApiService.MovieApiResponse::getRating)
+//                        : Optional.empty();
 
         Double avgRating = content.getRating() != null ? content.getRating() : 0.0;
 
         return ContentResponseDto.builder()
                 .id(content.getId())
-                .Kp_Id(content.getKpId())
+//                .Kp_Id(content.getKpId())
                 .title(content.getTitle())
+                .title_original(content.getTitle_original())
                 .description(content.getDescription())
                 .short_description(content.getShortDescription())
                 .releaseYear(content.getReleaseYear())
@@ -172,7 +172,7 @@ public class ContentService {
                 .age_rating(content.getAgeRating())
                 .averageRating(avgRating)
                 .votesCount(votesCount != null ? votesCount : 0L)
-                .kp_rating(ratingsOpt.map(r -> r.getKp() != null ? r.getKp() : 0).orElse(0.0))
+//                .kp_rating(ratingsOpt.map(r -> r.getKp() != null ? r.getKp() : 0).orElse(0.0))
                 .genres(genreNames)
                 .genreIds(genreIds)
                 .logo_url(content.getLogoUrl())
@@ -212,8 +212,9 @@ public class ContentService {
             Content existing = contentRepository.findById(id)
                     .orElseThrow(() -> new NoSuchElementException("Контент не найден"));
 
-            existing.setKpId(dto.getKpId());
+//            existing.setKpId(dto.getKpId());
             existing.setTitle(dto.getTitle());
+            existing.setTitle_original(dto.getTitle_original());
             existing.setDescription(dto.getDescription());
             existing.setShortDescription(dto.getShortDescription());
             existing.setReleaseYear(dto.getReleaseYear());
@@ -344,8 +345,9 @@ public class ContentService {
 
     private Content buildContentEntity(ContentRequestDto dto) {
         return Content.builder()
-                .kpId(dto.getKpId())
+//                .kpId(dto.getKpId())
                 .title(dto.getTitle())
+                .title_original(dto.getTitle_original())
                 .description(dto.getDescription())
                 .shortDescription(dto.getShortDescription())
                 .releaseYear(dto.getReleaseYear())
@@ -404,6 +406,34 @@ public class ContentService {
         return mediaTracks.stream()
                 .map(t -> new TrackDto(t.getSrcUrl(), t.getLabel(), t.getLanguageCode(), "subtitles", t.isDefault()))
                 .toList();
+    }
+
+    public List<ContentDto.ShortContentDto> getContentShortByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return contentRepository.findAllById(ids).stream()
+                .map(content -> {
+                    // Получаем количество голосов
+                    Long votes = ratingRepository.getVotesCountForContent(content.getId());
+                    votes = votes != null ? votes : 0L;
+                    Double avgRating = content.getRating() != null ? content.getRating() : 0.0;
+
+                    return ContentDto.ShortContentDto.builder()
+                            .id(content.getId())
+                            .title(content.getTitle())
+                            .logo_url(content.getLogoUrl())
+                            .short_description(content.getShortDescription())
+                            .releaseYear(content.getReleaseYear())
+                            .type(content.getType().name())
+                            .genres(content.getGenresLinks().stream()
+                                    .map(link -> link.getGenre().getName())
+                                    .collect(Collectors.toList()))
+                            .averageRating(avgRating)
+                            .votesCount(votes)
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
     private String sanitizeFolderName(String title) {

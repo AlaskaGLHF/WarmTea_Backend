@@ -53,7 +53,8 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/users/**",
                                 "/api/content/**",
-                                "/api/genres"
+                                "/api/genres",
+                                "/api/ml/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

@@ -42,8 +42,9 @@ public class UsersService {
 
     // === Получить пользователя по email ===
     public UserResponseDTO getUserByEmail(String email) {
-        User user = usersRepository.findByEmail(email);
-        return user != null ? toDTO(user) : null;
+        return usersRepository.findByEmail(email)
+                .map(this::toDTO)
+                .orElse(null);
     }
 
     // === Обновление пользователя ===

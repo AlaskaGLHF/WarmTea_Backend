@@ -20,11 +20,14 @@ public class ContentDto {
         @Schema(description = "Уникальный идентификатор", example = "1")
         private Long id;
 
-        @Schema(description = "ID на Кинопоиске", example = "1234567")
-        private Long Kp_Id;
+//        @Schema(description = "ID на Кинопоиске", example = "1234567")
+//        private Long Kp_Id;
+
+        @Schema(description = "Название", example = "Начало")
+        private String title;
 
         @Schema(description = "Название", example = "Inception")
-        private String title;
+        private String title_original;
 
         @Schema(description = "Полное описание", example = "A mind-bending thriller...")
         private String description;
@@ -50,8 +53,8 @@ public class ContentDto {
         @Schema(description = "Общий пользовательский рейтинг", example = "8.7")
         private double rating;
 
-        @Schema(description = "Рейтинг Кинопоиска", example = "8.6")
-        private double kp_rating;
+//        @Schema(description = "Рейтинг Кинопоиска", example = "8.6")
+//        private double kp_rating;
 
         @Schema(description = "URL логотипа", example = "https://cdn.example.com/content/logo.png")
         private String logo_url;
@@ -76,7 +79,7 @@ public class ContentDto {
         private Long votesCount;
 
         private boolean isSingleVideo;
-        private String videoUrl; // Будет заполнено только для фильмов
+        private String videoUrl;
         private List<EpisodeResponseDto> seasons;
 
         private OffsetDateTime createdAt;
@@ -90,11 +93,14 @@ public class ContentDto {
     @Schema(description = "Запрос на создание или обновление контента")
     public static class ContentRequestDto {
 
-        @Schema(description = "ID Кинопоиска", example = "1393699")
-        private Long kpId; // Исправлено с Kp_Id на kpId
+//        @Schema(description = "ID Кинопоиска", example = "1393699")
+//        private Long kpId;
 
         @Schema(description = "Название", example = "Хоримия")
         private String title;
+
+        @Schema(description = "Оригинальное название", example = "Horimiya")
+        private String title_original;
 
         @Schema(description = "Полное описание")
         private String description;
@@ -141,6 +147,7 @@ public class ContentDto {
     public static class ShortContentDto {
         private Long id;
         private String title;
+        private String title_original;
         private String short_description;
         private int releaseYear;
         private String type;

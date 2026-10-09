@@ -9,11 +9,16 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
+
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -72,20 +77,19 @@ public class AuthController {
             description = "Ошибка валидации данных или регистрации",
             content = @Content
     )
-    @RequestBody(
-            description = "Данные нового пользователя",
-            required = true,
-            content = @Content(schema = @Schema(implementation = AuthDto.RegisterRequestDTO.class))
-    )
-    public ResponseEntity<AuthDto.RegisterResponseDTO> register(
+    public ResponseEntity<?> register(
             @org.springframework.web.bind.annotation.RequestBody AuthDto.RegisterRequestDTO request
     ) {
         try {
-            var response = authService.register(request, null);
+            var response = authService.register(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .body(Map.of("message", e.getReason() == null ? "Ошибка" : e.getReason()));
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            log.error("Ошибка регистрации", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", e.getMessage()));
         }
     }
 }

@@ -5,7 +5,7 @@ import lombok.*;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "rating", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "movie_id"}))
+@Table(name = "rating", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "content_id"}))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,7 +21,7 @@ public class Rating {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "movie_id")
+    @JoinColumn(name = "content_id")
     private Content content;
 
     private int score;

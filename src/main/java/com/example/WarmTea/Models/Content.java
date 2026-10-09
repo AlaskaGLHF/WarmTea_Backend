@@ -20,8 +20,9 @@ public class Content {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long kpId;
     private String title;
+
+    private String title_original;
 
     @Column(columnDefinition = "TEXT")
     private String description;

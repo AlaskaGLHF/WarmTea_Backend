@@ -6,13 +6,11 @@ import com.example.WarmTea.Models.Roles;
 import com.example.WarmTea.Models.User;
 import com.example.WarmTea.Repository.RefreshTokenRepository;
 import com.example.WarmTea.Repository.UsersRepository;
-import com.example.WarmTea.Utils.FileValidator;
 import com.example.WarmTea.Utils.JwtUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
@@ -74,7 +72,7 @@ public class AuthService {
     }
 
     // === Регистрация ===
-    public AuthDto.RegisterResponseDTO register(AuthDto.RegisterRequestDTO request, MultipartFile avatarFile) {
+    public AuthDto.RegisterResponseDTO register(AuthDto.RegisterRequestDTO request) {
         if (request.getUsername() == null || request.getPassword() == null || request.getEmail() == null) {
             throw new ResponseStatusException(BAD_REQUEST, "Необходимо указать username, email и password");
         }
@@ -82,19 +80,14 @@ public class AuthService {
         if (usersRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new ResponseStatusException(CONFLICT, "Пользователь с таким username уже существует");
         }
-        if (usersRepository.findByEmail(request.getEmail()) != null) {
+        if (usersRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new ResponseStatusException(CONFLICT, "Пользователь с таким email уже существует");
         }
 
-        String avatarUrl = null;
-        if (avatarFile != null && !avatarFile.isEmpty()) {
-            try {
-                FileValidator.validateFileExtension(avatarFile, List.of("png", "jpg", "jpeg"));
-                avatarUrl = s3Service.uploadFile(avatarFile, "avatars");
-            } catch (Exception e) {
-                log.error("Ошибка загрузки файла: {}", e.getMessage());
-                throw new ResponseStatusException(UNSUPPORTED_MEDIA_TYPE, "Недопустимый формат изображения");
-            }
+        log.info("Register: avatarUrl from DTO = '{}'", request.getAvatarUrl());
+        String avatarUrl = request.getAvatarUrl();
+        if (avatarUrl != null && avatarUrl.isBlank()) {
+            avatarUrl = null;
         }
 
         User user = User.builder()

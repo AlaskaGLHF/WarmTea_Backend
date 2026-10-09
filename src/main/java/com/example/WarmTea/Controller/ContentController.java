@@ -1,9 +1,8 @@
 package com.example.WarmTea.Controller;
 
 import com.example.WarmTea.Dtos.ContentDto;
-import com.example.WarmTea.Dtos.TrackDto;
-import com.example.WarmTea.Models.Episode;
 import com.example.WarmTea.Service.ContentService;
+import com.example.WarmTea.Service.MLService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -29,6 +28,7 @@ import java.util.stream.Collectors;
 public class ContentController {
 
     private final ContentService contentService;
+    private final MLService mlService;
 
     @Operation(summary = "Получить весь контент", description = "Возвращает полный список фильмов, сериалов и аниме")
     @ApiResponses({
@@ -158,28 +158,21 @@ public class ContentController {
         return ResponseEntity.ok(contentService.getFullFavorites(userId));
     }
 
-    // ContentController.java
-
-    @GetMapping("/random")
-    @Operation(
-            summary = "Получить случайные записи контента по типу",
-            description = "Возвращает указанное количество случайных записей заданного типа (MOVIE, SERIES, ANIME)"
-    )
-    @ApiResponse(responseCode = "200", description = "Список случайных записей")
-    public ResponseEntity<List<ContentDto.ShortContentDto>> getRandomContent(
-            @RequestParam String type,
-            @RequestParam(defaultValue = "5") int limit
-    ) {
-        List<ContentDto.ShortContentDto> randomContent = contentService.getRandomContentByType(type, limit);
-        return ResponseEntity.ok(randomContent);
-    }
-
     @DeleteMapping("/{contentId}/genres/{genreId}")
     public ResponseEntity<Void> removeGenreFromContent(
             @PathVariable Long contentId,
             @PathVariable Long genreId) {
         contentService.removeGenreFromContent(contentId, genreId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/recommendations")
+    public ResponseEntity<List<ContentDto.ShortContentDto>> getRecommendations(
+            @RequestParam Long userId,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        List<ContentDto.ShortContentDto> recommendations = mlService.getRecommendations(userId, limit);
+        return ResponseEntity.ok(recommendations);
     }
 
 }

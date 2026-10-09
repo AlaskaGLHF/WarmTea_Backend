@@ -26,7 +26,8 @@ public class User {
     private String lastName;       // Фамилия
     private OffsetDateTime dateOfBirth; // Дата рождения
     private String country;        // Страна
-    private String avatarUrl;      // Ссылка на аватар
+    @Column(name = "avatar_url", columnDefinition = "TEXT")
+    private String avatarUrl;
     private Boolean is_delete;
 
     @ManyToOne
